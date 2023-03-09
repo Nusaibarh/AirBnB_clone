@@ -1,47 +1,50 @@
 #!/usr/bin/python3
-"""
-This is a module that stores are created classes
-to json to string and back
-"""
-
+"""This module defines a class to manage file storage for hbnb clone"""
 import json
 
 
 class FileStorage:
-    """
-    This class does as described above
-    """
-
+    """This class manages storage of hbnb models in JSON format"""
     __file_path = 'file.json'
     __objects = {}
 
     def all(self):
-        """
-        returns a dictionary in the object
-        """
-        return (self.__objects)
+        """Returns a dictionary of models currently in storage"""
+        return FileStorage.__objects
 
     def new(self, obj):
-        """
-        This method creates the dictionary of object saved
-        """
-        key = "{}.{}".format(obj.__class__.__name__, obj.id)
-        self.__objects.update({key: obj.to_dict()})
+        """Adds new object to storage dictionary"""
+        self.all().update({obj.to_dict()['__class__'] + '.' + obj.id: obj})
 
     def save(self):
-        """
-        Now we need to serialize our object into json file
-        """
-        with open(self.__file_path, "w") as file:
-            json.dump(self.__objects, file)
+        """Saves storage dictionary to file"""
+        with open(FileStorage.__file_path, 'w') as f:
+            temp = {}
+            temp.update(FileStorage.__objects)
+            for key, val in temp.items():
+                temp[key] = val.to_dict()
+            json.dump(temp, f)
 
     def reload(self):
-        """
-        We saved a file and need to convert it back to object
-        file.json is loaded as dictionary into object attribute
-        """
+        """Loads storage dictionary from file"""
+        from models.base_model import BaseModel
+        from models.user import User
+        from models.place import Place
+        from models.state import State
+        from models.city import City
+        from models.amenity import Amenity
+        from models.review import Review
+
+        classes = {
+                    'BaseModel': BaseModel, 'User': User, 'Place': Place,
+                    'State': State, 'City': City, 'Amenity': Amenity,
+                    'Review': Review
+                  }
         try:
-            with open(self.__file_path, "r") as fileread:
-                self.__objects.update(json.load(fileread))
-        except Exception:
+            temp = {}
+            with open(FileStorage.__file_path, 'r') as f:
+                temp = json.load(f)
+                for key, val in temp.items():
+                        self.all()[key] = classes[val['__class__']](**val)
+        except FileNotFoundError:
             pass

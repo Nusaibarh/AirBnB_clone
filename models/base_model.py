@@ -1,70 +1,44 @@
 #!/usr/bin/python3
-"""
-This is the base model
-it generates a unique id with uuid.uuid4()
-created at date time 
-can also update from json
-this is all for now
-"""
-
+"""This module defines a base class for all models in our hbnb clone"""
 import uuid
 from datetime import datetime
-from . import storage
 
-class BaseModel(object):
-    """
-    This is the base model
-    """
 
-    id = 0
-    created_at = 0
-    updated_at = datetime.now()
-
+class BaseModel:
+    """A base class for all hbnb models"""
     def __init__(self, *args, **kwargs):
-        """
-        This initializes the class with Id, Date and Time
-        """
-        if 'id' in kwargs:
-                self.id = kwargs['id']
-        else:
+        """Instatntiates a new model"""
+        if not kwargs:
+            from models import storage
             self.id = str(uuid.uuid4())
-        if 'created_at' in kwargs:
-            self.created_at = datetime.strptime(kwargs['created_at'], '%Y-%m-%dT%H:%M:%S.%f')
-        else:
             self.created_at = datetime.now()
-        if 'updated_at' in kwargs:
-            self.updated_at = datetime.strptime(kwargs['updated_at'], '%Y-%m-%dT%H:%M:%S.%f')
-        if 'name' in kwargs:
-            self.name = kwargs['name']
-        if 'my_number' in kwargs:
-            self.my_number = kwargs['my_number']
-        if 'id' not in kwargs:
+            self.updated_at = datetime.now()
             storage.new(self)
-        for key in kwargs:
-            if key not in dir(self):
-                setattr(self, key, kwargs[key])
+        else:
+            kwargs['updated_at'] = datetime.strptime(kwargs['updated_at'],
+                                                     '%Y-%m-%dT%H:%M:%S.%f')
+            kwargs['created_at'] = datetime.strptime(kwargs['created_at'],
+                                                     '%Y-%m-%dT%H:%M:%S.%f')
+            del kwargs['__class__']
+            self.__dict__.update(kwargs)
 
     def __str__(self):
-        """
-        This is a string representation of my class
-        It returns the class name id and dictionary
-        """
-        return ("[{}] ({}) {}".format(self.__class__.__name__, self.id, self.__dict__))
+        """Returns a string representation of the instance"""
+        cls = (str(type(self)).split('.')[-1]).split('\'')[0]
+        return '[{}] ({}) {}'.format(cls, self.id, self.__dict__)
 
     def save(self):
-        """
-        This is a save method to save shits
-        It also updates the save time to update at
-        """
+        """Updates updated_at with current time when instance is changed"""
+        from models import storage
         self.updated_at = datetime.now()
         storage.save()
 
     def to_dict(self):
-        """
-        This returns a dictionary serialized for json
-        """
-        serial = {}
-        serial.update(self.__dict__)
-        serial.update({'updated_at':self.updated_at.isoformat(), 'created_at':self.created_at.isoformat()})
-        serial.update({'__class__':self.__class__.__name__})
-        return serial
+        """Convert instance into dict format"""
+        dictionary = {}
+        dictionary.update(self.__dict__)
+        dictionary.update({'__class__':
+                          (str(type(self)).split('.')[-1]).split('\'')[0]})
+        dictionary['created_at'] = self.created_at.isoformat()
+        dictionary['updated_at'] = self.updated_at.isoformat()
+        return dictionary
